@@ -1,64 +1,109 @@
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { productSchema } from "./validation";
+import React, { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { adSchema } from './validation';
 
-const Home = () => {
-    const { register, handleSubmit, formState: { errors } } = useForm({
-        resolver: zodResolver(productSchema),
+export default function Home() {
+    const [submitted, setSubmitted] = useState(null);
+
+    const {
+        register,
+        handleSubmit,
+        formState: { errors, dirtyFields },
+    } = useForm({
+        resolver: zodResolver(adSchema),
+        mode: 'onChange',
+        defaultValues: { phone: '+380' },
     });
 
-    const onSubmit = (data) => console.log(data);
+    const onSubmit = (data) => setSubmitted(data);
+
+    // Клас Bootstrap: червоний при помилці, зелений якщо поле заповнене правильно
+    const getFieldClass = (name) => {
+        if (errors[name]) return 'is-invalid';
+        return dirtyFields[name] ? 'is-valid' : '';
+    };
+
+    // Текст помилки під полем
+    const showError = (name) =>
+        errors[name] && <div className="invalid-feedback">{errors[name].message}</div>;
+
+    // Однакове текстове поле (виклик як функції, не як компонента)
+    const textField = (name, label, placeholder, type = 'text') => (
+        <div className="mb-3">
+            <label htmlFor={name} className="form-label">{label}</label>
+            <input
+                id={name}
+                type={type}
+                placeholder={placeholder}
+                className={`form-control ${getFieldClass(name)}`}
+                {...register(name)}
+            />
+            {showError(name)}
+        </div>
+    );
+
+    if (submitted) {
+        return (
+            <div className="container mt-2">
+                <h1 className="text-center">Оголошення опубліковано!</h1>
+                <div className="col-md-6 offset-md-3">
+                    <div className="alert alert-success">
+                        «{submitted.title}» — {submitted.price} грн
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
-        <div style={{ maxWidth: 400, margin: "40px auto", fontFamily: "sans-serif" }}>
-            <h1 style={{ textAlign: "center", fontSize: "1.5rem" }}>Створення продукту</h1>
-            <form onSubmit={handleSubmit(onSubmit)} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                <div>
-                    <input placeholder="Назва" {...register("name")} style={{ width: "100%", padding: "8px" }} />
-                    {errors.name && (
-                        <p style={{ color: "red", fontSize: "0.85rem", margin: "4px 0 0" }}>{errors.name.message}</p>
-                    )}
+        <div className="container mt-2">
+            <h1 className="text-center">Створення оголошення</h1>
+            <form className="col-md-6 offset-md-3" onSubmit={handleSubmit(onSubmit)}>
+                {textField('title', 'Заголовок оголошення', '')}
+
+                <div className="mb-3">
+                    <label htmlFor="category" className="form-label">Категорія</label>
+                    <select id="category" className={`form-select ${getFieldClass('category')}`} {...register('category')}>
+                        <option value="">Оберіть категорію</option>
+                        <option value="electronics">Електроніка</option>
+                        <option value="fashion">Одяг</option>
+                        <option value="home">Дім і сад</option>
+                        <option value="auto">Авто</option>
+                    </select>
+                    {showError('category')}
                 </div>
 
-                <div>
-                    <input placeholder="Категорія" {...register("category")} style={{ width: "100%", padding: "8px" }} />
-                    {errors.category && (
-                        <p style={{ color: "red", fontSize: "0.85rem", margin: "4px 0 0" }}>{errors.category.message}</p>
-                    )}
-                </div>
-
-                <div>
-                    <input
-                        placeholder="Ціна"
-                        type="number"
-                        {...register("price", { valueAsNumber: true })}
-                        style={{ width: "100%", padding: "8px" }}
+                <div className="mb-3">
+                    <label htmlFor="description" className="form-label">Опис</label>
+                    <textarea
+                        id="description"
+                        rows={4}
+                        placeholder="Опишіть товар (мінімум 40 символів)"
+                        className={`form-control ${getFieldClass('description')}`}
+                        {...register('description')}
                     />
-                    {errors.price && (
-                        <p style={{ color: "red", fontSize: "0.85rem", margin: "4px 0 0" }}>{errors.price.message}</p>
-                    )}
+                    {showError('description')}
                 </div>
 
-                <div>
-                    <input placeholder="Фото (URL)" {...register("photo")} style={{ width: "100%", padding: "8px" }} />
-                    {errors.photo && (
-                        <p style={{ color: "red", fontSize: "0.85rem", margin: "4px 0 0" }}>{errors.photo.message}</p>
-                    )}
+                <div className="mb-3">
+                    <label htmlFor="price" className="form-label">Ціна (грн)</label>
+                    <input
+                        id="price"
+                        type="number"
+                        placeholder="0"
+                        className={`form-control ${errors.price ? 'is-invalid' : ''}`}
+                        {...register('price')}
+                    />
+                    {showError('price')}
                 </div>
 
-                <div>
-                    <input placeholder="Виробник" {...register("manufacturer")} style={{ width: "100%", padding: "8px" }} />
-                    {errors.manufacturer && (
-                        <p style={{ color: "red", fontSize: "0.85rem", margin: "4px 0 0" }}>{errors.manufacturer.message}</p>
-                    )}
-                </div>
+                {textField('city', 'Місто', 'Київ')}
+                {textField('contactPerson', 'Контактна особа', "Ім'я")}
+                {textField('phone', 'Телефон', '+380501234567', 'tel')}
 
-                <button type="submit" style={{ padding: "10px", cursor: "pointer" }}>
-                    Створити
-                </button>
+                <button type="submit" className="btn btn-success">Опублікувати</button>
             </form>
         </div>
     );
-};
-
-export default Home;
+}
